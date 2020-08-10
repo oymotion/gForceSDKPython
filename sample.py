@@ -4,15 +4,9 @@ import threading
 import struct
 
 # An example of the callback function
-<<<<<<< HEAD
+
 def cmd_cb(resp,respdata):
     print('Command result: {}'.format(resp))
-=======
-
-
-def cmd_cb(resp, respdata):
-    print('Command executed successfully')
->>>>>>> 440ccfba18e0c240986675f04fb87fc75e1a6261
     print('raspdata:{}'.format(respdata))
 
 # An example of the ondata
@@ -74,8 +68,8 @@ if __name__ == '__main__':
                 button = int(input('Please select a function or exit:'))
 
                 if button == 0:
-
                     break
+
                 elif button == 1:
                     GF.setLED(False, cmd_cb, 1000)
                     time.sleep(3)
