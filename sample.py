@@ -5,7 +5,7 @@ import struct
 
 # An example of the callback function
 def cmd_cb(resp,respdata):
-    print('Command executed successfully')
+    print('Command result: {}'.format(resp))
     print('raspdata:{}'.format(respdata))
 
 # An example of the ondata
