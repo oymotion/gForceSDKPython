@@ -7,9 +7,9 @@ import threading
 import time
 import queue
 
-<<<<<<< HEAD
+
 class GF_RET_CODE(Enum):
-    
+
     # Method returns successfully.
     GF_SUCCESS = 0,
 
@@ -18,62 +18,28 @@ class GF_RET_CODE(Enum):
 
     # Given parameters are not match required.
     GF_ERROR_BAD_PARAM = 2,
-    
+
     # Method call is not allowed by the inner state.
     GF_ERROR_BAD_STATE = 3,
-    
+
     # Method is not supported at this time.
     GF_ERROR_NOT_SUPPORT = 4,
-    
+
     # Hub is busying on device scan and cannot fulfill the call.
     GF_ERROR_SCAN_BUSY = 5,
-    
+
     # Insufficient resource to perform the call.
     GF_ERROR_NO_RESOURCE = 6,
-    
+
     # A preset timer is expired.
     GF_ERROR_TIMEOUT = 7,
-    
+
     # Target device is busy and cannot fulfill the call.
     GF_ERROR_DEVICE_BUSY = 8,
-    
+
     # The retrieving data is not ready yet
     GF_ERROR_NOT_READY = 9
-=======
-GF_RET_CODE = Enum('GF_RET_CODE',
-                   (
-                       # Method returns successfully.
-                       'GF_SUCCESS',
 
-                       # Method returns with a generic error.
-                       'GF_ERROR',
-
-                       # Given parameters are not match required.
-                       'GF_ERROR_BAD_PARAM',
-
-                       # Method call is not allowed by the inner state.
-                       'GF_ERROR_BAD_STATE',
-
-                       # Method is not supported at this time.
-                       'GF_ERROR_NOT_SUPPORT',
-
-                       # Hub is busying on device scan and cannot fulfill the call.
-                       'GF_ERROR_SCAN_BUSY',
-
-                       # Insufficient resource to perform the call.
-                       'GF_ERROR_NO_RESOURCE',
-
-                       # A preset timer is expired.
-                       'GF_ERROR_TIMEOUT',
-
-                       # Target device is busy and cannot fulfill the call.
-                       'GF_ERROR_DEVICE_BUSY',
-
-                       # The retrieving data is not ready yet
-                       'GF_ERROR_NOT_READY'
-                   )
-                   )
->>>>>>> 440ccfba18e0c240986675f04fb87fc75e1a6261
 
 CommandType = dict(
     CMD_GET_PROTOCOL_VERSION=0x00,
@@ -281,11 +247,6 @@ class MyDelegate(btle.DefaultDelegate):
 
 class GForceProfile():
     def __init__(self):
-<<<<<<< HEAD
-=======
-        self.kServiceGuids = ('0000ffd0-0000-1000-8000-00805f9b34fb',
-                              '00001130-0000-1000-8000-00805f9b34fb')
->>>>>>> 440ccfba18e0c240986675f04fb87fc75e1a6261
         self.device = Peripheral()
         self.state = BluetoothDeviceState.disconnected
         self.cmdCharacteristic = None
@@ -431,7 +392,6 @@ class GForceProfile():
         # Send data
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-<<<<<<< HEAD
     # def switchToOAD(self,cb,timeout):
     #     # Pack data
     #     data = []
@@ -443,20 +403,6 @@ class GForceProfile():
 
     #     # Send data
     #     return self.sendCommand(ProfileCharType.PROF_DATA_CMD,data,True,temp,timeout)
-=======
-    def switchToOAD(self, cb, timeout):
-        # Pack data
-        data = []
-        data.append(CommandType['CMD_SWITCH_TO_OAD'])
-        data = bytes(data)
-
-        def temp(resp, respData):
-            if cb != None:
-                cb(resp, None)
-
-        # Send data
-        return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
->>>>>>> 440ccfba18e0c240986675f04fb87fc75e1a6261
 
     def powerOff(self, timeout):
         # Pack data

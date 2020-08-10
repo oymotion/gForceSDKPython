@@ -5,7 +5,8 @@ import struct
 
 # An example of the callback function
 
-def cmd_cb(resp,respdata):
+
+def cmd_cb(resp, respdata):
     print('Command result: {}'.format(resp))
     print('raspdata:{}'.format(respdata))
 
