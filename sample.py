@@ -9,6 +9,7 @@ import struct
 def set_cmd_cb(resp):
     print('Command result: {}'.format(resp))
 
+
 def get_firmware_version_cb(resp, firmware_version):
     print('Command result: {}'.format(resp))
     print('Firmware version: {}'.format(firmware_version))
@@ -76,13 +77,14 @@ if __name__ == '__main__':
                     break
 
                 elif button == 1:
-                    GF.getControllerFirmwareVersion(get_firmware_version_cb, 1000)
+                    GF.getControllerFirmwareVersion(
+                        get_firmware_version_cb, 1000)
 
                 elif button == 2:
                     GF.setLED(False, set_cmd_cb, 1000)
                     time.sleep(3)
                     GF.setLED(True, set_cmd_cb, 1000)
-                    
+
                 elif button == 3:
                     GF.setMotor(True, set_cmd_cb, 1000)
                     time.sleep(3)
@@ -97,6 +99,8 @@ if __name__ == '__main__':
                         button = input()
                         if len(button) != 0:
                             GF.stopDataNotification()
+                            GF.setDataNotifSwitch(
+                                DataNotifFlags['DNF_OFF'], set_cmd_cb, 1000)
                             break
 
                 elif button == 5:
@@ -108,6 +112,8 @@ if __name__ == '__main__':
 
                     if len(button) != 0:
                         GF.stopDataNotification()
+                        GF.setDataNotifSwitch(
+                            DataNotifFlags['DNF_OFF'], set_cmd_cb, 1000)
                         break
                     time.sleep(1000)
 
