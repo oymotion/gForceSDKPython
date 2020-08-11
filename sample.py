@@ -28,6 +28,18 @@ def ondata(data):
                 quaternion.append(i[0])
             print('quaternion:', quaternion)
 
+        elif data[0] == NotifDataType['DNF_EMG_RAW'] and len(data) == 129:
+            # Data for EMG CH0~CHn repeatly.
+            # Resolution set in setEmgRawDataConfig:
+            #   8: one byte for one channel
+            #   12: two bytes in LSB for one channel.
+            # eg. 8bpp mode, data[1] = channel[0], data[2] = channel[1], ... data[8] = channel[7]
+            #                data[9] = channel[0] and so on
+            # eg. 12bpp mode, {data[2], data[1]} = channel[0], {data[4], data[3]} = channel[1] and so on
+            for i in range(1, 129):
+                print(data[i])
+            # end for
+
 
 def print2menu():
     print('_'*75)
