@@ -6,9 +6,12 @@ import struct
 # An example of the callback function
 
 
-def cmd_cb(resp, respdata):
+def set_cmd_cb(resp):
     print('Command result: {}'.format(resp))
-    print('raspdata:{}'.format(respdata))
+
+def get_firmware_version_cb(resp, firmware_version):
+    print('Command result: {}'.format(resp))
+    print('Firmware version: {}'.format(firmware_version))
 
 # An example of the ondata
 
@@ -73,21 +76,21 @@ if __name__ == '__main__':
                     break
 
                 elif button == 1:
-                    GF.getControllerFirmwareVersion(cmd_cb, 1000)
+                    GF.getControllerFirmwareVersion(get_firmware_version_cb, 1000)
 
                 elif button == 2:
-                    GF.setLED(False, cmd_cb, 1000)
+                    GF.setLED(False, set_cmd_cb, 1000)
                     time.sleep(3)
-                    GF.setLED(True, cmd_cb, 1000)
+                    GF.setLED(True, set_cmd_cb, 1000)
                     
                 elif button == 3:
-                    GF.setMotor(True, cmd_cb, 1000)
+                    GF.setMotor(True, set_cmd_cb, 1000)
                     time.sleep(3)
-                    GF.setMotor(False, cmd_cb, 1000)
+                    GF.setMotor(False, set_cmd_cb, 1000)
 
                 elif button == 4:
                     GF.setDataNotifSwitch(
-                        DataNotifFlags['DNF_QUATERNION'], cmd_cb, 1000)
+                        DataNotifFlags['DNF_QUATERNION'], set_cmd_cb, 1000)
                     GF.startDataNotification(ondata)
 
                     while True:
@@ -98,7 +101,7 @@ if __name__ == '__main__':
 
                 elif button == 5:
                     GF.setDataNotifSwitch(
-                        DataNotifFlags['DNF_EMG_RAW'], cmd_cb, 1000)
+                        DataNotifFlags['DNF_EMG_RAW'], set_cmd_cb, 1000)
 
                     GF.startDataNotification(ondata)
                     button = input()
@@ -118,5 +121,5 @@ if __name__ == '__main__':
                     resolution = eval(
                         input('Please enter resolution value(defaults:8): '))
                     GF.setEmgRawDataConfig(
-                        sampRate, channelMask, dataLen, resolution, cb=cmd_cb, timeout=1000)
+                        sampRate, channelMask, dataLen, resolution, cb=set_cmd_cb, timeout=1000)
             break

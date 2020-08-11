@@ -206,9 +206,9 @@ class BluetoothDeviceState(Enum):
     connected = 1
 
 
-GUID = '0000ffd0-0000-1000-8000-00805f9b34fb'
-CMD_UUID = 'f000ffe1-0451-4000-b000-000000000000'
-NOTIFY_UUID = 'f000ffe2-0451-4000-b000-000000000000'
+SERVICE_GUID = '0000ffd0-0000-1000-8000-00805f9b34fb'
+CMD_NOTIFY_CHAR_UUID = 'f000ffe1-0451-4000-b000-000000000000'
+DATA_NOTIFY_CHAR_UUID = 'f000ffe2-0451-4000-b000-000000000000'
 
 
 class CommandCallbackTableEntry():
@@ -277,16 +277,16 @@ class GForceProfile():
         print('connection succeeded')
 
         # set mtu
-        MTU = self.device.setMTU(2000)
+        MTU = self.device.setMTU(200)
         self.mtu = MTU['mtu'][0]
         # self.device.setMTU(self.mtu)
         # print('mtu:{}'.format(self.mtu))
 
         self.state = BluetoothDeviceState.connected
 
-        self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_UUID)
+        self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_NOTIFY_CHAR_UUID)
         self.notifyCharacteristic = self.getCharacteristic(
-            self.device, NOTIFY_UUID)
+            self.device, DATA_NOTIFY_CHAR_UUID)
 
         # Listen cmd
         self.setNotify(self.cmdCharacteristic, True)
@@ -306,7 +306,7 @@ class GForceProfile():
                   (dev.addr, dev.addrType, dev.rssi))
             for (_, desc, value) in dev.getScanData():
                 print("  %s = %s" % (desc, value))
-                if (value == GUID):
+                if (value == SERVICE_GUID):
                     rssi_devices[dev.rssi] = dev.addr
 
         rssi = rssi_devices.keys()
@@ -324,9 +324,9 @@ class GForceProfile():
 
         self.state = BluetoothDeviceState.connected
 
-        self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_UUID)
+        self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_NOTIFY_CHAR_UUID)
         self.notifyCharacteristic = self.getCharacteristic(
-            self.device, NOTIFY_UUID)
+            self.device, DATA_NOTIFY_CHAR_UUID)
 
         # Listen cmd
         self.setNotify(self.cmdCharacteristic, True)
@@ -353,7 +353,7 @@ class GForceProfile():
         i = 1
         for dev in devices:
             for (_, _, value) in dev.getScanData():
-                if (value == GUID):
+                if (value == SERVICE_GUID):
                     gforce_scan.append([i, dev.getValueText(
                         9), dev.addr, dev.rssi, str(dev.connectable)])
                     i += 1
@@ -387,7 +387,7 @@ class GForceProfile():
 
         def temp(resp, respData):
             if cb != None:
-                cb(resp, None)
+                cb(resp)
 
         # Send data
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
@@ -438,7 +438,7 @@ class GForceProfile():
 
         def temp(resp, respData):
             if cb != None:
-                cb(resp, None)
+                cb(resp)
 
         # send data
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
@@ -453,7 +453,7 @@ class GForceProfile():
 
         def temp(resp, respData):
             if cb != None:
-                cb(resp, None)
+                cb(resp)
 
         # send data
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
@@ -468,7 +468,7 @@ class GForceProfile():
 
         def temp(resp, respData):
             if cb != None:
-                cb(resp, None)
+                cb(resp)
 
         # Send data
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
@@ -486,13 +486,13 @@ class GForceProfile():
 
         def temp(resp, raspData):
             if cb != None:
-                cb(resp, None)
+                cb(resp)
 
         # Send data
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
     # Get Emg Raw Data Config
-    def getEmgRawDataConfig(self, sampRate, channelMask, dataLen, resolution, cb, timeout):
+    def getEmgRawDataConfig(self, cb, timeout):
         # Pack data
         data = []
         data.append(CommandType['CMD_GET_EMG_RAWDATA_CONFIG'])
@@ -518,7 +518,7 @@ class GForceProfile():
         def temp(resp, respData):
             if cb != None:
                 if resp != ResponseResult['RSP_CODE_SUCCESS']:
-                    cb(resp, None)
+                    cb(resp)
                 elif len(respData) == 4:
                     featureMap = struct.unpack('@I', respData)[0]
                     cb(resp, featureMap)
@@ -534,7 +534,7 @@ class GForceProfile():
         def temp(resp, respData):
             if cb != None:
                 if resp != ResponseResult['RSP_CODE_SUCCESS']:
-                    cb(resp, None)
+                    cb(resp)
                 else:
                     if len(respData) > 4:
                         firmwareVersion = respData.decode('ascii')
