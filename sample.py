@@ -27,12 +27,13 @@ def ondata(data):
 
 def print2menu():
     print('_'*75)
-    print('0: exit')
-    print('1: Toggle LED')
-    print('2: Toggle Motor')
-    print('3: Get quaternion(press enter to stop)')
-    print('4: Get raw EMG data(press enter to stop)')
-    print('5:Set Emg Raw Data Config')
+    print('0: Exit')
+    print('1: Get Firmware Version')
+    print('2: Toggle LED')
+    print('3: Toggle Motor')
+    print('4: Get Quaternion(press enter to stop)')
+    print('5: Get Raw EMG data(press enter to stop)')
+    print('6: Set Emg Raw Data Config')
 
 
 if __name__ == '__main__':
@@ -72,36 +73,42 @@ if __name__ == '__main__':
                     break
 
                 elif button == 1:
-                    GF.setLED(False, cmd_cb, 1000)
-                    time.sleep(3)
                     GF.getControllerFirmwareVersion(cmd_cb, 1000)
 
                 elif button == 2:
+                    GF.setLED(False, cmd_cb, 1000)
+                    time.sleep(3)
+                    GF.setLED(True, cmd_cb, 1000)
+                    
+                elif button == 3:
                     GF.setMotor(True, cmd_cb, 1000)
                     time.sleep(3)
                     GF.setMotor(False, cmd_cb, 1000)
 
-                elif button == 3:
+                elif button == 4:
                     GF.setDataNotifSwitch(
                         DataNotifFlags['DNF_QUATERNION'], cmd_cb, 1000)
                     GF.startDataNotification(ondata)
+
                     while True:
                         button = input()
                         if len(button) != 0:
                             GF.stopDataNotification()
                             break
 
-                elif button == 4:
+                elif button == 5:
                     GF.setDataNotifSwitch(
                         DataNotifFlags['DNF_EMG_RAW'], cmd_cb, 1000)
+
                     GF.startDataNotification(ondata)
                     button = input()
+
                     if len(button) != 0:
                         GF.stopDataNotification()
                         break
                     time.sleep(1000)
 
-                elif button == 5:
+                elif button == 6:
                     sampRate = eval(
                         input('Please enter sample value(defaults:650): '))
                     channelMask = eval(
