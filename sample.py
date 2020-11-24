@@ -28,7 +28,7 @@ def ondata(data):
                 quaternion.append(i[0])
             print('quaternion:', quaternion)
 
-        elif data[0] == NotifDataType['DNF_EMG_RAW'] and len(data) == 129:
+        elif data[0] == NotifDataType['NTF_EMG_ADC_DATA'] and len(data) == 129:
             # Data for EMG CH0~CHn repeatly.
             # Resolution set in setEmgRawDataConfig:
             #   8: one byte for one channel
