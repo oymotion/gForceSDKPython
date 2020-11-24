@@ -1,3 +1,6 @@
+# !/usr/bin/python
+# -*- coding:utf-8 -*-
+
 from bluepy import btle
 from bluepy.btle import DefaultDelegate, Scanner, Peripheral
 from datetime import datetime, timedelta
@@ -284,7 +287,8 @@ class GForceProfile():
 
         self.state = BluetoothDeviceState.connected
 
-        self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_NOTIFY_CHAR_UUID)
+        self.cmdCharacteristic = self.getCharacteristic(
+            self.device, CMD_NOTIFY_CHAR_UUID)
         self.notifyCharacteristic = self.getCharacteristic(
             self.device, DATA_NOTIFY_CHAR_UUID)
 
@@ -324,7 +328,8 @@ class GForceProfile():
 
         self.state = BluetoothDeviceState.connected
 
-        self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_NOTIFY_CHAR_UUID)
+        self.cmdCharacteristic = self.getCharacteristic(
+            self.device, CMD_NOTIFY_CHAR_UUID)
         self.notifyCharacteristic = self.getCharacteristic(
             self.device, DATA_NOTIFY_CHAR_UUID)
 
@@ -610,12 +615,12 @@ class GForceProfile():
 
         for i in range(listlen):
             timeoutTime = cmdlist[0]._timeoutTime
-            print('_'*40)
-            print('系统时间：', datetime.now())
-            print('超时时间：', timeoutTime)
+            print('_' * 40)
+            print('system time : ', datetime.now())
+            print('timeout time: ', timeoutTime)
             print('\ncmd: {0}, timeout: {1}'.format(
                 hex(cmdlist[0]._cmd), timeoutTime < datetime.now()))
-            print('_'*40)
+            print('_' * 40)
 
             if timeoutTime > datetime.now():
                 self.cmdForTimeout = cmdlist[0]._cmd

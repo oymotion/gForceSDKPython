@@ -1,3 +1,6 @@
+# !/usr/bin/python
+# -*- coding:utf-8 -*-
+
 from gforce import GForceProfile, NotifDataType, DataNotifFlags
 import time
 import threading
