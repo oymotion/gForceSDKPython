@@ -547,7 +547,7 @@ class GForceProfile():
                     cb(resp, firmwareVersion)
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    def sendCommand(self, type, data, hasResponse, cb, timeout):
+    def sendCommand(self, profileCharType, data, hasResponse, cb, timeout):
         if hasResponse and cb != None:
             cmd = data[0]
 
@@ -561,7 +561,7 @@ class GForceProfile():
             self._refreshTimer()
             self.lock.release()
 
-        if type == ProfileCharType.PROF_DATA_CMD:
+        if profileCharType == ProfileCharType.PROF_DATA_CMD:
             if self.cmdCharacteristic == None:
                 return GF_RET_CODE.GF_ERROR_BAD_STATE
             else:
