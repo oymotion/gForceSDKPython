@@ -19,10 +19,12 @@ def get_firmware_version_cb(resp, firmware_version):
 
 # An example of the ondata
 
+packet_cnt = 0
+start_time = 0
 
 def ondata(data):
     if len(data) > 0:
-        print('data.length = {0} \ncontent = {1}'.format(len(data), data))
+        # print('[{0}] data.length = {1}, type = {2}'.format(time.time(), len(data), data[0]))
 
         if data[0] == NotifDataType['NTF_QUAT_FLOAT_DATA'] and len(data) == 17:
             quat_iter = struct.iter_unpack('f', data[1:])
@@ -39,9 +41,26 @@ def ondata(data):
             # eg. 8bpp mode, data[1] = channel[0], data[2] = channel[1], ... data[8] = channel[7]
             #                data[9] = channel[0] and so on
             # eg. 12bpp mode, {data[2], data[1]} = channel[0], {data[4], data[3]} = channel[1] and so on
-            for i in range(1, 129):
-                print(data[i])
+            # for i in range(1, 129):
+            #     print(data[i])
             # end for
+
+            global packet_cnt
+            global start_time
+
+            if start_time == 0:
+                start_time = time.time()
+            
+            packet_cnt += 1
+            
+            if packet_cnt % 100 == 0:
+                period = time.time() - start_time
+                sample_rate = 100 * 16 / period     # 16 means repeat time in one packet
+                byte_rate = 100 * len(data) / period
+                print('----- sample_rate:{0}, byte_rate:{1}'.format(sample_rate, byte_rate))
+
+                start_time = time.time()
+            #end if
 
 
 def print2menu():
@@ -58,6 +77,9 @@ def print2menu():
 if __name__ == '__main__':
     while True:
         GF = GForceProfile()
+
+        print("Scanning devices...")
+
         # Scan all gforces,return [[num,dev_name,dev_addr,dev_Rssi,dev_connectable],...]
         scan_results = GF.scan(5)
 
@@ -69,8 +91,10 @@ if __name__ == '__main__':
             print('No bracelet was found')
         else:
             for d in scan_results:
-                print(
-                    '{0:<1}: {1:^16} {2:<18} Rssi={3:<3}, connectable:{4:<6}'.format(*d))
+                try:
+                    print('{0:<1}: {1:^16} {2:<18} Rssi={3:<3}, connectable:{4:<6}'.format(*d))
+                except:
+                    pass
 
         # Handle user actions
         button = int(

@@ -482,12 +482,11 @@ class GForceProfile():
     def setEmgRawDataConfig(self, sampRate, channelMask, dataLen, resolution, cb, timeout):
        # Pack data
         data = b''
+        data += struct.pack('<B', CommandType['CMD_SET_EMG_RAWDATA_CONFIG'])
         data += struct.pack('<H', sampRate)
         data += struct.pack('<H', channelMask)
         data += struct.pack('<B', dataLen)
         data += struct.pack('<B', resolution)
-
-        data += struct.pack('<B', CommandType['CMD_SET_EMG_RAWDATA_CONFIG'])
 
         def temp(resp, raspData):
             if cb != None:
@@ -523,7 +522,7 @@ class GForceProfile():
         def temp(resp, respData):
             if cb != None:
                 if resp != ResponseResult['RSP_CODE_SUCCESS']:
-                    cb(resp)
+                    cb(resp, None)
                 elif len(respData) == 4:
                     featureMap = struct.unpack('@I', respData)[0]
                     cb(resp, featureMap)
@@ -539,16 +538,15 @@ class GForceProfile():
         def temp(resp, respData):
             if cb != None:
                 if resp != ResponseResult['RSP_CODE_SUCCESS']:
-                    cb(resp)
+                    cb(resp, None)
                 else:
                     if len(respData) > 4:
                         firmwareVersion = respData.decode('ascii')
                     else:
                         firmwareVersion = ''
                         for i in respData:
-                            firmwareVersion += str(i)+'.'
-                        firmwareVersion = firmwareVersion[0:len(
-                            firmwareVersion)]
+                            firmwareVersion += str(i) + '.'
+                        firmwareVersion = firmwareVersion[0:len(firmwareVersion)]
                     cb(resp, firmwareVersion)
         return self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
