@@ -55,7 +55,7 @@ def ondata(data):
             
             if packet_cnt % 100 == 0:
                 period = time.time() - start_time
-                sample_rate = 100 * 16 / period     # 16 means repeat time in one packet
+                sample_rate = 100 * 16 / period     # 16 means repeat times in one packet
                 byte_rate = 100 * len(data) / period
                 print('----- sample_rate:{0}, byte_rate:{1}'.format(sample_rate, byte_rate))
 
