@@ -70,8 +70,8 @@ def print2menu():
     print('2: Toggle LED')
     print('3: Toggle Motor')
     print('4: Get Quaternion(press enter to stop)')
-    print('5: Get Raw EMG data(press enter to stop)')
-    print('6: Set Emg Raw Data Config')
+    print('5: Get Raw EMG data(set EMG raw data config first please, press enter to stop)')
+    print('6: Set EMG Raw Data Config')
 
 
 if __name__ == '__main__':
@@ -158,13 +158,13 @@ if __name__ == '__main__':
 
                 elif button == 6:
                     sampRate = eval(
-                        input('Please enter sample value(defaults:650): '))
+                        input('Please enter sample value(e.g., 650): '))
                     channelMask = eval(
-                        input('Please enter channelMask value(defaults:0xFF): '))
+                        input('Please enter channelMask value(e.g., 0xFF): '))
                     dataLen = eval(
-                        input('Please enter dataLen value(defaults:128): '))
+                        input('Please enter dataLen value(e.g., 128): '))
                     resolution = eval(
-                        input('Please enter resolution value(defaults:8): '))
+                        input('Please enter resolution value(e.g., 8): '))
                     GF.setEmgRawDataConfig(
                         sampRate, channelMask, dataLen, resolution, cb=set_cmd_cb, timeout=1000)
             break
