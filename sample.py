@@ -31,6 +31,7 @@ def ondata(data):
             quaternion = []
             for i in quat_iter:
                 quaternion.append(i[0])
+            #end for
             print('quaternion:', quaternion)
 
         elif data[0] == NotifDataType['NTF_EMG_ADC_DATA'] and len(data) == 129:
@@ -60,7 +61,9 @@ def ondata(data):
                 print('----- sample_rate:{0}, byte_rate:{1}'.format(sample_rate, byte_rate))
 
                 start_time = time.time()
-            #end if
+            # end if
+        # end if
+    # end if
 
 
 def print2menu():
@@ -70,11 +73,17 @@ def print2menu():
     print('2: Toggle LED')
     print('3: Toggle Motor')
     print('4: Get Quaternion(press enter to stop)')
-    print('5: Get Raw EMG data(set EMG raw data config first please, press enter to stop)')
-    print('6: Set EMG Raw Data Config')
+    print('5: Set EMG Raw Data Config')
+    print('6: Get Raw EMG data(set EMG raw data config first please, press enter to stop)')
 
 
 if __name__ == '__main__':
+
+    sampRate = 500
+    channelMask = 0xFF
+    dataLen = 128
+    resolution = 8
+
     while True:
         GF = GForceProfile()
 
@@ -95,10 +104,10 @@ if __name__ == '__main__':
                     print('{0:<1}: {1:^16} {2:<18} Rssi={3:<3}, connectable:{4:<6}'.format(*d))
                 except:
                     pass
+            # end for
 
         # Handle user actions
-        button = int(
-            input('Please select the device you want to connect or exit:'))
+        button = int(input('Please select the device you want to connect or exit:'))
 
         if button == 0:
             break
@@ -116,8 +125,7 @@ if __name__ == '__main__':
                     break
 
                 elif button == 1:
-                    GF.getControllerFirmwareVersion(
-                        get_firmware_version_cb, 1000)
+                    GF.getControllerFirmwareVersion(get_firmware_version_cb, 1000)
 
                 elif button == 2:
                     GF.setLED(False, set_cmd_cb, 1000)
@@ -130,41 +138,36 @@ if __name__ == '__main__':
                     GF.setMotor(False, set_cmd_cb, 1000)
 
                 elif button == 4:
-                    GF.setDataNotifSwitch(
-                        DataNotifFlags['DNF_QUATERNION'], set_cmd_cb, 1000)
+                    GF.setDataNotifSwitch(DataNotifFlags['DNF_QUATERNION'], set_cmd_cb, 1000)
+                    time.sleep(1)
                     GF.startDataNotification(ondata)
 
-                    while True:
-                        button = input()
-                        if len(button) != 0:
-                            GF.stopDataNotification()
-                            GF.setDataNotifSwitch(
-                                DataNotifFlags['DNF_OFF'], set_cmd_cb, 1000)
-                            break
+                    button = input()
+                    print("Stopping...")
+                    GF.stopDataNotification()
+                    time.sleep(1)
+                    GF.setDataNotifSwitch(DataNotifFlags['DNF_OFF'], set_cmd_cb, 1000)
 
                 elif button == 5:
-                    GF.setDataNotifSwitch(
-                        DataNotifFlags['DNF_EMG_RAW'], set_cmd_cb, 1000)
-
-                    GF.startDataNotification(ondata)
-                    button = input()
-
-                    if len(button) != 0:
-                        GF.stopDataNotification()
-                        GF.setDataNotifSwitch(
-                            DataNotifFlags['DNF_OFF'], set_cmd_cb, 1000)
-                        break
-                    time.sleep(1000)
+                    sampRate = eval(input('Please enter sample value(max 500, e.g., 500): '))
+                    channelMask = eval(input('Please enter channelMask value(e.g., 0xFF): '))
+                    dataLen = eval(input('Please enter dataLen value(e.g., 128): '))
+                    resolution = eval(input('Please enter resolution value(8 or 12, e.g., 8): '))
 
                 elif button == 6:
-                    sampRate = eval(
-                        input('Please enter sample value(e.g., 650): '))
-                    channelMask = eval(
-                        input('Please enter channelMask value(e.g., 0xFF): '))
-                    dataLen = eval(
-                        input('Please enter dataLen value(e.g., 128): '))
-                    resolution = eval(
-                        input('Please enter resolution value(e.g., 8): '))
-                    GF.setEmgRawDataConfig(
-                        sampRate, channelMask, dataLen, resolution, cb=set_cmd_cb, timeout=1000)
+                    GF.setEmgRawDataConfig(sampRate, channelMask, dataLen, resolution, cb=set_cmd_cb, timeout=1000)
+                    GF.setDataNotifSwitch(DataNotifFlags['DNF_EMG_RAW'], set_cmd_cb, 1000)
+                    time.sleep(1)
+                    GF.startDataNotification(ondata)
+                    
+                    button = input()
+                    print("Stopping...")
+                    GF.stopDataNotification()
+                    time.sleep(1)
+                    GF.setDataNotifSwitch(DataNotifFlags['DNF_OFF'], set_cmd_cb, 1000)
+            # end while
+
             break
+        # end if
+    # end while
+# end if
