@@ -1,215 +1,180 @@
 # !/usr/bin/python
 # -*- coding:utf-8 -*-
 
-import queue
 import struct
 import threading
 import time
 from datetime import datetime, timedelta
-from enum import Enum
 
-from bluepy import btle
-from bluepy.btle import DefaultDelegate, Peripheral, Scanner
+import asyncio
+from bleak import BleakClient, BleakScanner, BleakGATTCharacteristic
 
 
-class GF_RET_CODE(Enum):
+class GF_RET_CODE(int):
 
     # Method returns successfully.
-    GF_SUCCESS = 0,
+    GF_SUCCESS = 0
 
     # Method returns with a generic error.
-    GF_ERROR = 1,
+    GF_ERROR = 1
 
     # Given parameters are not match required.
-    GF_ERROR_BAD_PARAM = 2,
+    GF_ERROR_BAD_PARAM = 2
 
     # Method call is not allowed by the inner state.
-    GF_ERROR_BAD_STATE = 3,
+    GF_ERROR_BAD_STATE = 3
 
     # Method is not supported at this time.
-    GF_ERROR_NOT_SUPPORT = 4,
+    GF_ERROR_NOT_SUPPORT = 4
 
     # Hub is busying on device scan and cannot fulfill the call.
-    GF_ERROR_SCAN_BUSY = 5,
+    GF_ERROR_SCAN_BUSY = 5
 
     # Insufficient resource to perform the call.
-    GF_ERROR_NO_RESOURCE = 6,
+    GF_ERROR_NO_RESOURCE = 6
 
     # A preset timer is expired.
-    GF_ERROR_TIMEOUT = 7,
+    GF_ERROR_TIMEOUT = 7
 
     # Target device is busy and cannot fulfill the call.
-    GF_ERROR_DEVICE_BUSY = 8,
+    GF_ERROR_DEVICE_BUSY = 7
 
     # The retrieving data is not ready yet
     GF_ERROR_NOT_READY = 9
 
 
-CommandType = dict(
-    CMD_GET_PROTOCOL_VERSION=0x00,
-    CMD_GET_FEATURE_MAP=0x01,
-    CMD_GET_DEVICE_NAME=0x02,
-    CMD_GET_MODEL_NUMBER=0x03,
-    CMD_GET_SERIAL_NUMBER=0x04,
-    CMD_GET_HW_REVISION=0x05,
-    CMD_GET_FW_REVISION=0x06,
-    CMD_GET_MANUFACTURER_NAME=0x07,
-    CMD_GET_BOOTLOADER_VERSION=0x0A,
-
-    CMD_GET_BATTERY_LEVEL=0x08,
-    CMD_GET_TEMPERATURE=0x09,
-
-    CMD_POWEROFF=0x1D,
-    CMD_SWITCH_TO_OAD=0x1E,
-    CMD_SYSTEM_RESET=0x1F,
-    CMD_SWITCH_SERVICE=0x20,
-
-    CMD_SET_LOG_LEVEL=0x21,
-    CMD_SET_LOG_MODULE=0x22,
-    CMD_PRINT_KERNEL_MSG=0x23,
-    CMD_MOTOR_CONTROL=0x24,
-    CMD_LED_CONTROL_TEST=0x25,
-    CMD_PACKAGE_ID_CONTROL=0x26,
-    CMD_SEND_TRAINING_PACKAGE=0x27,
-
-    CMD_GET_ACCELERATE_CAP=0x30,
-    CMD_SET_ACCELERATE_CONFIG=0x31,
-
-    CMD_GET_GYROSCOPE_CAP=0x32,
-    CMD_SET_GYROSCOPE_CONFIG=0x33,
-
-    CMD_GET_MAGNETOMETER_CAP=0x34,
-    CMD_SET_MAGNETOMETER_CONFIG=0x35,
-
-    CMD_GET_EULER_ANGLE_CAP=0x36,
-    CMD_SET_EULER_ANGLE_CONFIG=0x37,
-
-    CMD_GET_QUATERNION_CAP=0x38,
-    CMD_SET_QUATERNION_CONFIG=0x39,
-
-    CMD_GET_ROTATION_MATRIX_CAP=0x3A,
-    CMD_SET_ROTATION_MATRIX_CONFIG=0x3B,
-
-    CMD_GET_GESTURE_CAP=0x3C,
-    CMD_SET_GESTURE_CONFIG=0x3D,
-
-    CMD_GET_EMG_RAWDATA_CAP=0x3E,
-    CMD_SET_EMG_RAWDATA_CONFIG=0x3F,
-
-    CMD_GET_MOUSE_DATA_CAP=0x40,
-    CMD_SET_MOUSE_DATA_CONFIG=0x41,
-
-    CMD_GET_JOYSTICK_DATA_CAP=0x42,
-    CMD_SET_JOYSTICK_DATA_CONFIG=0x43,
-
-    CMD_GET_DEVICE_STATUS_CAP=0x44,
-    CMD_SET_DEVICE_STATUS_CONFIG=0x45,
-
-    CMD_GET_EMG_RAWDATA_CONFIG=0x46,
-
-    CMD_SET_DATA_NOTIF_SWITCH=0x4F,
+class CommandType(int):
+    CMD_GET_PROTOCOL_VERSION = 0x00
+    CMD_GET_FEATURE_MAP = 0x01
+    CMD_GET_DEVICE_NAME = 0x02
+    CMD_GET_MODEL_NUMBER = 0x03
+    CMD_GET_SERIAL_NUMBER = 0x04
+    CMD_GET_HW_REVISION = 0x05
+    CMD_GET_FW_REVISION = 0x06
+    CMD_GET_MANUFACTURER_NAME = 0x07
+    CMD_GET_BOOTLOADER_VERSION = 0x0A
+    CMD_GET_BATTERY_LEVEL = 0x08
+    CMD_GET_TEMPERATURE = 0x09
+    CMD_POWEROFF = 0x1D
+    CMD_SWITCH_TO_OAD = 0x1E
+    CMD_SYSTEM_RESET = 0x1F
+    CMD_SWITCH_SERVICE = 0x20
+    CMD_SET_LOG_LEVEL = 0x21
+    CMD_SET_LOG_MODULE = 0x22
+    CMD_PRINT_KERNEL_MSG = 0x23
+    CMD_MOTOR_CONTROL = 0x24
+    CMD_LED_CONTROL_TEST = 0x25
+    CMD_PACKAGE_ID_CONTROL = 0x26
+    CMD_SEND_TRAINING_PACKAGE = 0x27
+    CMD_GET_ACCELERATE_CAP = 0x30
+    CMD_SET_ACCELERATE_CONFIG = 0x31
+    CMD_GET_GYROSCOPE_CAP = 0x32
+    CMD_SET_GYROSCOPE_CONFIG = 0x33
+    CMD_GET_MAGNETOMETER_CAP = 0x34
+    CMD_SET_MAGNETOMETER_CONFIG = 0x35
+    CMD_GET_EULER_ANGLE_CAP = 0x36
+    CMD_SET_EULER_ANGLE_CONFIG = 0x37
+    CMD_GET_QUATERNION_CAP = 0x38
+    CMD_SET_QUATERNION_CONFIG = 0x39
+    CMD_GET_ROTATION_MATRIX_CAP = 0x3A
+    CMD_SET_ROTATION_MATRIX_CONFIG = 0x3B
+    CMD_GET_GESTURE_CAP = 0x3C
+    CMD_SET_GESTURE_CONFIG = 0x3D
+    CMD_GET_EMG_RAWDATA_CAP = 0x3E
+    CMD_SET_EMG_RAWDATA_CONFIG = 0x3F
+    CMD_GET_MOUSE_DATA_CAP = 0x40
+    CMD_SET_MOUSE_DATA_CONFIG = 0x41
+    CMD_GET_JOYSTICK_DATA_CAP = 0x42
+    CMD_SET_JOYSTICK_DATA_CONFIG = 0x43
+    CMD_GET_DEVICE_STATUS_CAP = 0x44
+    CMD_SET_DEVICE_STATUS_CONFIG = 0x45
+    CMD_GET_EMG_RAWDATA_CONFIG = 0x46
+    CMD_SET_DATA_NOTIF_SWITCH = 0x4F
     # Partial command packet, format: [CMD_PARTIAL_DATA, packet number in reverse order, packet content]
-    MD_PARTIAL_DATA=0xFF
-)
+    CMD_PARTIAL_DATA = 0xFF
+
 
 # Response from remote device
-ResponseResult = dict(
-    RSP_CODE_SUCCESS=0x00,
-    RSP_CODE_NOT_SUPPORT=0x01,
-    RSP_CODE_BAD_PARAM=0x02,
-    RSP_CODE_FAILED=0x03,
-    RSP_CODE_TIMEOUT=0x04,
+class ResponseResult(int):
+    RSP_CODE_SUCCESS = 0x00
+    RSP_CODE_NOT_SUPPORT = 0x01
+    RSP_CODE_BAD_PARAM = 0x02
+    RSP_CODE_FAILED = 0x03
+    RSP_CODE_TIMEOUT = 0x04
     # Partial packet, format: [RSP_CODE_PARTIAL_PACKET, packet number in reverse order, packet content]
-    RSP_CODE_PARTIAL_PACKET=0xFF
-)
+    RSP_CODE_PARTIAL_PACKET = 0xFF
 
-DataNotifFlags = dict(
+
+class DataNotifFlags(int):
     # Data Notify All Off
-    DNF_OFF=0x00000000,
-
+    DNF_OFF = 0x00000000
     # Accelerate On(C.7)
-    DNF_ACCELERATE=0x00000001,
-
+    DNF_ACCELERATE = 0x00000001
     # Gyroscope On(C.8)
-    DNF_GYROSCOPE=0x00000002,
-
+    DNF_GYROSCOPE = 0x00000002
     # Magnetometer On(C.9)
-    DNF_MAGNETOMETER=0x00000004,
-
+    DNF_MAGNETOMETER = 0x00000004
     # Euler Angle On(C.10)
-    DNF_EULERANGLE=0x00000008,
-
+    DNF_EULERANGLE = 0x00000008
     # Quaternion On(C.11)
-    DNF_QUATERNION=0x00000010,
-
+    DNF_QUATERNION = 0x00000010
     # Rotation Matrix On(C.12)
-    DNF_ROTATIONMATRIX=0x00000020,
-
+    DNF_ROTATIONMATRIX = 0x00000020
     # EMG Gesture On(C.13)
-    DNF_EMG_GESTURE=0x00000040,
-
+    DNF_EMG_GESTURE = 0x00000040
     # EMG Raw Data On(C.14)
-    DNF_EMG_RAW=0x00000080,
-
+    DNF_EMG_RAW = 0x00000080
     # HID Mouse On(C.15)
-    DNF_HID_MOUSE=0x00000100,
-
+    DNF_HID_MOUSE = 0x00000100
     # HID Joystick On(C.16)
-    DNF_HID_JOYSTICK=0x00000200,
-
+    DNF_HID_JOYSTICK = 0x00000200
     # Device Status On(C.17)
-    DNF_DEVICE_STATUS=0x00000400,
-
+    DNF_DEVICE_STATUS = 0x00000400
     # Device Log On(C.18)
-    DNF_LOG=0x00000800,
-
+    DNF_LOG = 0x00000800
     # EMG Gesture with strength On(C.19)
-    DNF_EMG_GESTURE_STRENGTH=0x00001000,
-
+    DNF_EMG_GESTURE_STRENGTH = 0x00001000
     # Data Notify All On
-    DNF_ALL=0xFFFFFFFF
-)
+    DNF_ALL = 0xFFFFFFFF
 
 
-class ProfileCharType(Enum):
+class ProfileCharType(int):
     PROF_SIMPLE_DATA = 0  # simple profile: data char
-    PROF_DATA_CMD = 1,  # data profile: cmd char
-    PROF_DATA_NTF = 2,  # data profile：nty char
-    PROF_OAD_IDENTIFY = 3,  # OAD profile：identify char
-    PROF_OAD_BLOCK = 4,  # OAD profile：block char
+    PROF_DATA_CMD = 1  # data profile: cmd char
+    PROF_DATA_NTF = 2  # data profile：nty char
+    PROF_OAD_IDENTIFY = 3  # OAD profile：identify char
+    PROF_OAD_BLOCK = 4  # OAD profile：block char
     PROF_OAD_FAST = 5  # OAD profile：fast char
 
 
-NotifDataType = dict(
-    NTF_ACC_DATA=0x01,
-    NTF_GYO_DATA=0x02,
-    NTF_MAG_DATA=0x03,
-    NTF_EULER_DATA=0x04,
-    NTF_QUAT_FLOAT_DATA=0x05,
-    NTF_ROTA_DATA=0x06,
-    NTF_EMG_GEST_DATA=0x07,
-    NTF_EMG_ADC_DATA=0x08,
-    NTF_HID_MOUSE=0x09,
-    NTF_HID_JOYSTICK=0x0A,
-    NTF_DEV_STATUS=0x0B,
-    NTF_LOG_DATA=0x0C,  # Log data
-
+class NotifDataType(int):
+    NTF_ACC_DATA = 0x01
+    NTF_GYO_DATA = 0x02
+    NTF_MAG_DATA = 0x03
+    NTF_EULER_DATA = 0x04
+    NTF_QUAT_FLOAT_DATA = 0x05
+    NTF_ROTA_DATA = 0x06
+    NTF_EMG_GEST_DATA = 0x07
+    NTF_EMG_ADC_DATA = 0x08
+    NTF_HID_MOUSE = 0x09
+    NTF_HID_JOYSTICK = 0x0A
+    NTF_DEV_STATUS = 0x0B
+    NTF_LOG_DATA = 0x0C  # Log data
     # Partial packet, format: [NTF_PARTIAL_DATA, packet number in reverse order, packet content]
-    NTF_PARTIAL_DATA=0xFF
-)
-
-LogLevel = dict(
-    LOG_LEVEL_DEBUG=0x00,
-    LOG_LEVEL_INFO=0x01,
-    LOG_LEVEL_WARN=0x02,
-    LOG_LEVEL_ERROR=0x03,
-    LOG_LEVEL_FATAL=0x04,
-    LOG_LEVEL_NONE=0x05,
-)
+    NTF_PARTIAL_DATA = 0xFF
 
 
-class BluetoothDeviceState(Enum):
-    disconnected = 0,
+class LogLevel(int):
+    LOG_LEVEL_DEBUG = 0x00
+    LOG_LEVEL_INFO = 0x01
+    LOG_LEVEL_WARN = 0x02
+    LOG_LEVEL_ERROR = 0x03
+    LOG_LEVEL_FATAL = 0x04
+    LOG_LEVEL_NONE = 0x05
+
+
+class BluetoothDeviceState(int):
+    disconnected = 0
     connected = 1
 
 
@@ -225,36 +190,9 @@ class CommandCallbackTableEntry:
         self._cb = _cb
 
 
-class MyDelegate(btle.DefaultDelegate):
-    def __init__(self, gforce):
-        super().__init__()
-        self.gforce = gforce
-        self.bluepy_thread = threading.Thread(target=self.bluepy_handler)
-        self.bluepy_thread.setDaemon(True)
-        self.bluepy_thread.start()
-
-    def bluepy_handler(self):
-        while True:
-            if not self.gforce.send_queue.empty():
-                cmd = self.gforce.send_queue.get_nowait()
-                self.gforce.cmdCharacteristic.write(cmd)
-            self.gforce.device.waitForNotifications(1)
-
-    def handleNotification(self, cHandle, data):
-        # check cHandle
-        #        self.gforce.lock.acquire()
-        if cHandle == self.gforce.cmdCharacteristic.getHandle():
-            self.gforce._onResponse(data)
-
-        # check cHandle
-        if cHandle == self.gforce.notifyCharacteristic.getHandle():
-            self.gforce.handleDataNotification(data, self.gforce.onData)
-        # self.gforce.lock.release()
-
-
 class GForceProfile:
     def __init__(self):
-        self.device = Peripheral()
+        self.device = None
         self.state = BluetoothDeviceState.disconnected
         self.cmdCharacteristic = None
         self.notifyCharacteristic = None
@@ -268,117 +206,86 @@ class GForceProfile:
         self.lastIncompleteNotifPacketId = 0
         self.onData = None
         self.lock = threading.Lock()
-        self.send_queue = queue.Queue(maxsize=20)
 
-    def getCharacteristic(self, device, uuid):
-        ches = device.getCharacteristics()
-        for ch in ches:
-            if uuid == str(ch.uuid):
-                return ch
-            else:
-                continue
+    def handle_disconnect(_: BleakClient):
+        for task in asyncio.all_tasks():
+            task.cancel()
 
     # Establishes a connection to the Bluetooth Device.
-    def connect(self, addr):
-        self.device.connect(addr)
-        print("connection succeeded")
+    async def connect(self, addr):
+        self.device = BleakClient(addr, disconnected_callback=self.handle_disconnect)
+        await self.device.connect()
 
-        # set mtu
-        MTU = self.device.setMTU(200)
-        self.mtu = MTU["mtu"][0]
-        # self.device.setMTU(self.mtu)
-        # print('mtu:{}'.format(self.mtu))
+        print("connection succeeded.")
+
+        # TODO：set mtu?
+
+        self.mtu = self.device.mtu_size
+        print(f"mtu:{self.mtu}")
 
         self.state = BluetoothDeviceState.connected
 
-        self.cmdCharacteristic = self.getCharacteristic(
-            self.device, CMD_NOTIFY_CHAR_UUID
-        )
-        self.notifyCharacteristic = self.getCharacteristic(
-            self.device, DATA_NOTIFY_CHAR_UUID
-        )
+        # self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_NOTIFY_CHAR_UUID)
+        self.cmdCharacteristic = CMD_NOTIFY_CHAR_UUID
+        # self.notifyCharacteristic = self.getCharacteristic(self.device, DATA_NOTIFY_CHAR_UUID)
+        self.notifyCharacteristic = DATA_NOTIFY_CHAR_UUID
 
-        # Listen cmd
-        self.setNotify(self.cmdCharacteristic, True)
-
-        # Open the listening thread
-        self.device.setDelegate(MyDelegate(self))
+        await self.device.start_notify(self.cmdCharacteristic, self._onResponse)
 
     # Connect the bracelet with the strongest signal
+    async def connectByRssi(self, timeout, name_prefix="", min_rssi=-128):
+        scan_result = await self.scan(timeout, name_prefix, min_rssi)
 
-    def connectByRssi(self):
-        scanner = Scanner()
-        devices = scanner.scan(10.0)
         rssi_devices = {}
 
-        for dev in devices:
-            print("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
-            for _, desc, value in dev.getScanData():
-                print("  %s = %s" % (desc, value))
-                if value == SERVICE_GUID:
-                    rssi_devices[dev.rssi] = dev.addr
+        for dev in scan_result:
+            rssi_devices[dev["rssi"]] = dev["address"]
 
         rssi = rssi_devices.keys()
         dev_addr = rssi_devices[max(rssi)]
 
         # connect the bracelet
-        self.device.connect(dev_addr)
+        self.device = BleakClient(dev_addr, disconnected_callback=self.handle_disconnect)
+        await self.device.connect()
         print("connection succeeded")
 
-        # set mtu
-        MTU = self.device.setMTU(2000)
-        self.mtu = MTU["mtu"][0]
-        # self.device.setMTU(self.mtu)
-        # print('mtu:{}'.format(self.mtu))
+        # TODO：set mtu?
+
+        self.mtu = self.device.mtu_size
+        print("mtu:{1}".format(self.mtu))
 
         self.state = BluetoothDeviceState.connected
 
-        self.cmdCharacteristic = self.getCharacteristic(
-            self.device, CMD_NOTIFY_CHAR_UUID
-        )
-        self.notifyCharacteristic = self.getCharacteristic(
-            self.device, DATA_NOTIFY_CHAR_UUID
-        )
+        # self.cmdCharacteristic = self.getCharacteristic(self.device, CMD_NOTIFY_CHAR_UUID)
+        self.cmdCharacteristic = CMD_NOTIFY_CHAR_UUID
+        # self.notifyCharacteristic = self.getCharacteristic(self.device, DATA_NOTIFY_CHAR_UUID)
+        self.notifyCharacteristic = DATA_NOTIFY_CHAR_UUID
 
-        # Listen cmd
-        self.setNotify(self.cmdCharacteristic, True)
+        await self.device.start_notify(self.cmdCharacteristic, self._onResponse)
 
-        # Open the listening thread
-        self.device.setDelegate(MyDelegate(self))
+    async def scan(self, timeout, name_prefix="", min_rssi=-128):
+        # Scan for devices
+        scanner = BleakScanner(service_uuids=[SERVICE_GUID])
+        await scanner.start()
+        time.sleep(timeout)
+        await scanner.stop()
 
-    # Enable a characteristic's notification
-    def setNotify(self, Chara, swich):
-        if swich:
-            setup_data = b"\x01\x00"
-        else:
-            setup_data = b"\x00\x00"
-
-        setup_handle = Chara.getHandle() + 1
-        self.device.writeCharacteristic(setup_handle, setup_data, withResponse=False)
-
-    def scan(self, timeout):
-        scanner = Scanner()
-        devices = scanner.scan(timeout)
-
-        gforce_scan = []
+        scan_result = []
         i = 1
-        for dev in devices:
-            for _, _, value in dev.getScanData():
-                if value == SERVICE_GUID:
-                    gforce_scan.append(
-                        [
-                            i,
-                            dev.getValueText(9),
-                            dev.addr,
-                            dev.rssi,
-                            str(dev.connectable),
-                        ]
-                    )
-                    i += 1
-        return gforce_scan
+
+        for v in scanner.discovered_devices_and_advertisement_data.values():
+            dev = v[0]
+            advData = v[1]
+
+            if (dev.name is not None) and dev.name.startswith(name_prefix) and (advData.rssi >= min_rssi):
+                print("Filtered device %s (%s), RSSI=%d dB" % (dev.address, dev.name, advData.rssi))
+                scan_result.append({"index": i, "name": dev.name, "address": dev.address, "rssi": advData.rssi})
+                i += 1
+
+        return scan_result
 
     # Disconnect from device
-    def disconnect(self):
+    async def disconnect(self):
         if self.timer != None:
             self.timer.cancel()
         self.timer = None
@@ -387,14 +294,14 @@ class GForceProfile:
         if self.state == BluetoothDeviceState.disconnected:
             return True
         else:
-            self.device.disconnect()
+            await self.device.disconnect()
             self.state == BluetoothDeviceState.disconnected
 
     # Set data notification flag
-    def setDataNotifSwitch(self, flags, cb, timeout):
+    async def setDataNotifSwitch(self, flags, cb, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_SET_DATA_NOTIF_SWITCH"])
+        data.append(CommandType.CMD_SET_DATA_NOTIF_SWITCH)
         data.append(0xFF & (flags))
         data.append(0xFF & (flags >> 8))
         data.append(0xFF & (flags >> 16))
@@ -406,53 +313,47 @@ class GForceProfile:
                 cb(resp)
 
         # Send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    # def switchToOAD(self,cb,timeout):
+    # async def switchToOAD(self,cb,timeout):
     #     # Pack data
     #     data = []
-    #     data.append(CommandType['CMD_SWITCH_TO_OAD'])
+    #     data.append(CommandType.CMD_SWITCH_TO_OAD)
     #     data = bytes(data)
     #     def temp(resp,respData):
     #         if cb != None:
     #             cb(resp,None)
 
     #     # Send data
-    #     return self.sendCommand(ProfileCharType.PROF_DATA_CMD,data,True,temp,timeout)
+    #     return await self.sendCommand(ProfileCharType.PROF_DATA_CMD,data,True,temp,timeout)
 
-    def powerOff(self, timeout):
+    async def powerOff(self, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_POWEROFF"])
+        data.append(CommandType.CMD_POWEROFF)
         data = bytes(data)
 
         def temp(resp, respData):
             pass
 
         # Send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    def systemReset(self, timeout):
+    async def systemReset(self, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_SYSTEM_RESET"])
+        data.append(CommandType.CMD_SYSTEM_RESET)
         data = bytes(data)
 
         def temp(resp, respData):
             pass
 
         # Send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    def setMotor(self, switchStatus, cb, timeout):
+    async def setMotor(self, switchStatus, cb, timeout):
         data = []
-        data.append(CommandType["CMD_MOTOR_CONTROL"])
+        data.append(CommandType.CMD_MOTOR_CONTROL)
 
         tem = 0x01 if switchStatus else 0x00
         data.append(tem)
@@ -463,13 +364,11 @@ class GForceProfile:
                 cb(resp)
 
         # send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    def setLED(self, switchStatus, cb, timeout):
+    async def setLED(self, switchStatus, cb, timeout):
         data = []
-        data.append(CommandType["CMD_LED_CONTROL_TEST"])
+        data.append(CommandType.CMD_LED_CONTROL_TEST)
 
         tem = 0x01 if switchStatus else 0x00
         data.append(tem)
@@ -480,15 +379,13 @@ class GForceProfile:
                 cb(resp)
 
         # send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
     # Get controller firmware version
-    def setLogLevel(self, logLevel, cb, timeout):
+    async def setLogLevel(self, logLevel, cb, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_SET_LOG_LEVEL"])
+        data.append(CommandType.CMD_SET_LOG_LEVEL)
         data.append(0xFF & logLevel)
         data = bytes(data)
 
@@ -497,17 +394,13 @@ class GForceProfile:
                 cb(resp)
 
         # Send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
     # Set Emg Raw Data Config
-    def setEmgRawDataConfig(
-        self, sampRate, channelMask, dataLen, resolution, cb, timeout
-    ):
+    async def setEmgRawDataConfig(self, sampRate, channelMask, dataLen, resolution, cb, timeout):
         # Pack data
         data = b""
-        data += struct.pack("<B", CommandType["CMD_SET_EMG_RAWDATA_CONFIG"])
+        data += struct.pack("<B", CommandType.CMD_SET_EMG_RAWDATA_CONFIG)
         data += struct.pack("<H", sampRate)
         data += struct.pack("<H", channelMask)
         data += struct.pack("<B", dataLen)
@@ -518,59 +411,51 @@ class GForceProfile:
                 cb(resp)
 
         # Send data
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
     # Get Emg Raw Data Config
-    def getEmgRawDataConfig(self, cb, timeout):
+    async def getEmgRawDataConfig(self, cb, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_GET_EMG_RAWDATA_CONFIG"])
+        data.append(CommandType.CMD_GET_EMG_RAWDATA_CONFIG)
         data = bytes(data)
 
         def temp(resp, respData):
             if cb != None:
-                if resp != ResponseResult["RSP_CODE_SUCCESS"]:
+                if resp != ResponseResult.RSP_CODE_SUCCESS:
                     cb(resp, None, None, None, None)
                 elif len(respData) == 6:
-                    sampRate, channelMask, dataLen, resolution = struct.unpack_from(
-                        "@HHBB", respData
-                    )
+                    sampRate, channelMask, dataLen, resolution = struct.unpack_from("@HHBB", respData)
                 cb(resp, sampRate, channelMask, dataLen, resolution)
 
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    def getFeatureMap(self, cb, timeout):
+    async def getFeatureMap(self, cb, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_GET_FEATURE_MAP"])
+        data.append(CommandType.CMD_GET_FEATURE_MAP)
         data = bytes(data)
 
         def temp(resp, respData):
             if cb != None:
-                if resp != ResponseResult["RSP_CODE_SUCCESS"]:
+                if resp != ResponseResult.RSP_CODE_SUCCESS:
                     cb(resp, None)
                 elif len(respData) == 4:
                     featureMap = struct.unpack("@I", respData)[0]
                     cb(resp, featureMap)
 
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
     # Get controller firmware version
-    def getControllerFirmwareVersion(self, cb, timeout):
+    async def getControllerFirmwareVersion(self, cb, timeout):
         # Pack data
         data = []
-        data.append(CommandType["CMD_GET_FW_REVISION"])
+        data.append(CommandType.CMD_GET_FW_REVISION)
         data = bytes(data)
 
         def temp(resp, respData):
             if cb != None:
-                if resp != ResponseResult["RSP_CODE_SUCCESS"]:
+                if resp != ResponseResult.RSP_CODE_SUCCESS:
                     cb(resp, None)
                 else:
                     if len(respData) > 4:
@@ -582,11 +467,9 @@ class GForceProfile:
                         firmwareVersion = firmwareVersion[0 : len(firmwareVersion)]
                     cb(resp, firmwareVersion)
 
-        return self.sendCommand(
-            ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout
-        )
+        return await self.sendCommand(ProfileCharType.PROF_DATA_CMD, data, True, temp, timeout)
 
-    def sendCommand(self, profileCharType, data, hasResponse, cb, timeout):
+    async def sendCommand(self, profileCharType, data, hasResponse, cb, timeout):
         if hasResponse and cb != None:
             cmd = data[0]
 
@@ -595,9 +478,7 @@ class GForceProfile:
             if cmd in self.cmdMap.keys():
                 self.lock.release()
                 return GF_RET_CODE.GF_ERROR_DEVICE_BUSY
-            self.cmdMap[cmd] = CommandCallbackTableEntry(
-                cmd, datetime.now() + timedelta(milliseconds=timeout), cb
-            )
+            self.cmdMap[cmd] = CommandCallbackTableEntry(cmd, datetime.now() + timedelta(milliseconds=timeout), cb)
             self._refreshTimer()
             self.lock.release()
 
@@ -612,19 +493,22 @@ class GForceProfile:
                     buf = []
 
                     for i in range(packetCount - 1, 0, -1):
-                        buf.append(CommandType["CMD_PARTIAL_DATA"])
+                        buf.append(CommandType.CMD_PARTIAL_DATA)
                         buf.append(i)
                         buf += data[startIndex : startIndex + contentLen]
                         startIndex += contentLen
-                        self.send_queue.put_nowait(buf)
+                        # self.send_queue.put_nowait(buf)
+                        await self.device.write_gatt_char(self.cmdCharacteristic, buf)
                         buf.clear()
                     # Packet end
-                    buf.append(CommandType["CMD_PARTIAL_DATA"])
+                    buf.append(CommandType.CMD_PARTIAL_DATA)
                     buf.append(0)
                     buf += data[startIndex:]
-                    self.send_queue.put_nowait(buf)
+                    # self.send_queue.put_nowait(buf)
+                    await self.device.write_gatt_char(self.cmdCharacteristic, buf)
                 else:
-                    self.send_queue.put_nowait(data)
+                    # self.send_queue.put_nowait(data)
+                    await self.device.write_gatt_char(self.cmdCharacteristic, data)
 
                 return GF_RET_CODE.GF_SUCCESS
         else:
@@ -653,11 +537,7 @@ class GForceProfile:
             print("_" * 40)
             print("system time : ", datetime.now())
             print("timeout time: ", timeoutTime)
-            print(
-                "\ncmd: {0}, timeout: {1}".format(
-                    hex(cmdlist[0]._cmd), timeoutTime < datetime.now()
-                )
-            )
+            print("\ncmd: {0}, timeout: {1}".format(hex(cmdlist[0]._cmd), timeoutTime < datetime.now()))
             print("_" * 40)
 
             if timeoutTime > datetime.now():
@@ -674,13 +554,13 @@ class GForceProfile:
             cmd = cmdlist.pop(0)
 
             if cmd._cb != None:
-                cmd._cb(ResponseResult["RSP_CODE_TIMEOUT"], None)
+                cmd._cb(ResponseResult.RSP_CODE_TIMEOUT, None)
 
-    def startDataNotification(self, onData):
+    async def startDataNotification(self, onData):
         self.onData = onData
 
         try:
-            self.setNotify(self.notifyCharacteristic, True)
+            await self.device.start_notify(self.notifyCharacteristic, self._handleDataNotification)
             success = True
         except:
             success = False
@@ -690,9 +570,9 @@ class GForceProfile:
         else:
             return GF_RET_CODE.GF_ERROR_BAD_STATE
 
-    def stopDataNotification(self):
+    async def stopDataNotification(self):
         try:
-            self.setNotify(self.notifyCharacteristic, False)
+            await self.device.stop_notify(self.notifyCharacteristic)
             success = True
         except:
             success = False
@@ -702,15 +582,12 @@ class GForceProfile:
         else:
             return GF_RET_CODE.GF_ERROR_BAD_STATE
 
-    def handleDataNotification(self, data, onData):
+    def _handleDataNotification(self, characteristic: BleakGATTCharacteristic, data: bytearray):
         fullPacket = []
 
         if len(data) >= 2:
-            if data[0] == NotifDataType["NTF_PARTIAL_DATA"]:
-                if (
-                    self.lastIncompleteNotifPacketId != 0
-                    and self.lastIncompleteNotifPacketId != data[1] + 1
-                ):
+            if data[0] == NotifDataType.NTF_PARTIAL_DATA:
+                if self.lastIncompleteNotifPacketId != 0 and self.lastIncompleteNotifPacketId != data[1] + 1:
                     print(
                         "Error:lastIncompleteNotifPacketId:{0},current packet id:{1}".format(
                             self.lastIncompleteNotifPacketId, data[1]
@@ -719,10 +596,7 @@ class GForceProfile:
                     # How to do with packet loss?
                     # Must validate packet len in onData callback!
 
-                if (
-                    self.lastIncompleteNotifPacketId == 0
-                    or self.lastIncompleteNotifPacketId > data[1]
-                ):
+                if self.lastIncompleteNotifPacketId == 0 or self.lastIncompleteNotifPacketId > data[1]:
                     # Only accept packet with smaller packet num
                     self.lastIncompleteNotifPacketId = data[1]
                     self.incompleteNotifPacket += data[2:]
@@ -735,30 +609,24 @@ class GForceProfile:
                 fullPacket = data
 
         if len(fullPacket) > 0:
-            onData(fullPacket)
+            self.onData(fullPacket)
 
     # Command notification callback
-    def _onResponse(self, data):
-        print("_onResponse: data=", data)
+    def _onResponse(self, characteristic, data):
+        print("_onResponse: characteristic= {0}, data= {1}".format(characteristic, data))
 
         fullPacket = []
 
         if len(data) >= 2:
-            if data[0] == ResponseResult["RSP_CODE_PARTIAL_PACKET"]:
-                if (
-                    self.lastIncompleteCmdRespPacketId != 0
-                    and self.lastIncompleteCmdRespPacketId != data[1] + 1
-                ):
+            if data[0] == ResponseResult.RSP_CODE_PARTIAL_PACKET:
+                if self.lastIncompleteCmdRespPacketId != 0 and self.lastIncompleteCmdRespPacketId != data[1] + 1:
                     print(
                         "Error: _lastIncompletePacketId:{0}, current packet id:{1}".format(
                             self.lastIncompleteCmdRespPacketId, data[1]
                         )
                     )
 
-                if (
-                    self.lastIncompleteCmdRespPacketId == 0
-                    or self.lastIncompleteCmdRespPacketId > data[1]
-                ):
+                if self.lastIncompleteCmdRespPacketId == 0 or self.lastIncompleteCmdRespPacketId > data[1]:
                     self.lastIncompleteCmdRespPacketId = data[1]
                     self.incompleteCmdRespPacket += data[2:]
                     print("_incompleteCmdRespPacket 等于 ", self.incompleteCmdRespPacket)
@@ -791,11 +659,7 @@ class GForceProfile:
 
     # Timeout callback function
     def _onTimeOut(self):
-        print(
-            "_onTimeOut: _cmdForTimeout={0}, time={1}".format(
-                self.cmdForTimeout, datetime.now()
-            )
-        )
+        print("_onTimeOut: _cmdForTimeout={0}, time={1}".format(self.cmdForTimeout, datetime.now()))
 
         # Delete command callback table entry & refresh timer's timeout
 
@@ -811,4 +675,4 @@ class GForceProfile:
         self.lock.release()
 
         if cb != None:
-            cb(ResponseResult["RSP_CODE_TIMEOUT"], None)
+            cb(ResponseResult.RSP_CODE_TIMEOUT, None)
