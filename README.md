@@ -1,12 +1,11 @@
 # gForceSDKPython
 
-gFroce SDK of python version under linux. Needs bluepy library to work. 
-We recommend use RaspberryPi to run.
+gFroce SDK of python version for windows/linux. Needs bleak library to work.
 
-## Install bluepy
+## Install depencies
 
 ```SHELL
-sudo pip3 install bluepy
+sudo pip3 install -r requirements.txt
 ```
 
 ## Run
